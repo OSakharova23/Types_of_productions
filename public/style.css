@@ -24,7 +24,6 @@ body {
   min-height: 100vh;
 }
 
-/* Фиксированный компактный размер экрана 360x660 */
 .mobile-viewport {
   width: 360px;
   height: 660px;
@@ -37,16 +36,13 @@ body {
   border-radius: 12px;
 }
 
-/* Отключение скролла */
 .content-area {
   flex: 1;
   overflow-y: hidden;
   position: relative;
 }
 
-/* ============================================
-   НИЖНЯЯ ПАНЕЛЬ НАВИГАЦИИ (ТАББАР С ГОЛУБЫМ ГРАДИЕНТОМ)
-   ============================================ */
+/* НИЖНЯЯ ПАНЕЛЬ НАВИГАЦИИ */
 .tabbar {
   height: 52px;
   min-height: 52px;
@@ -73,9 +69,7 @@ body {
   color: #99a7ae;
 }
 
-/* ============================================
-   ЛЕНТА (FEED)
-   ============================================ */
+/* ЛЕНТА (FEED) */
 .feed-screen {
   height: 100%;
   position: relative;
@@ -213,9 +207,7 @@ body {
 .feed-expand-checkbox:checked ~ .feed-more-label .feed-more-open { display: none; }
 .feed-expand-checkbox:checked ~ .feed-more-label .feed-more-close { display: inline; }
 
-/* ============================================
-   ЭКРАН ДОБАВЛЕНИЯ (ADD)
-   ============================================ */
+/* ЭКРАН ДОБАВЛЕНИЯ (ADD) */
 .add-container {
   padding: 10px 12px;
   height: 100%;
@@ -329,9 +321,7 @@ body {
   hyphens: auto;
 }
 
-/* ============================================
-   ПЛИТКА (TILE) - ФИЛЬТР-СЛАЙДЕР
-   ============================================ */
+/* ПЛИТКА (TILE) - ДВОЙНОЙ ФИЛЬТР-СЛАЙДЕР */
 .filter-form {
   padding: 10px 12px 8px 12px;
   background: #ffffff;
@@ -374,16 +364,33 @@ body {
   transform: translateX(-5px);
 }
 
-.filter-slider {
-  -webkit-appearance: none;
-  appearance: none;
+.range-slider-wrapper {
+  position: relative;
+  width: 100%;
+  height: 16px;
+  display: flex;
+  align-items: center;
+}
+
+.range-slider-track {
+  position: absolute;
   width: 100%;
   height: 4px;
   background: var(--hf-border);
   border-radius: 2px;
+  z-index: 1;
+}
+
+.filter-slider {
+  position: absolute;
+  width: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+  background: none;
+  pointer-events: none;
   outline: none;
-  cursor: pointer;
   margin: 0;
+  z-index: 2;
 }
 
 .filter-slider::-webkit-slider-thumb {
@@ -396,6 +403,7 @@ body {
   border: 2px solid #ffffff;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
   cursor: pointer;
+  pointer-events: auto;
   transition: transform 0.15s ease;
 }
 
@@ -411,6 +419,7 @@ body {
   border: 2px solid #ffffff;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
   cursor: pointer;
+  pointer-events: auto;
   transition: transform 0.15s ease;
 }
 
@@ -418,10 +427,7 @@ body {
   transform: scale(1.15);
 }
 
-/* ============================================
-   РИСКИ: 41 шт, первая на месте, последняя −5px
-   (совпадают с движением укороченного ползунка)
-   ============================================ */
+/* РИСКИ */
 .filter-slider-ticks {
   display: flex;
   align-items: flex-start;
@@ -448,9 +454,7 @@ body {
   opacity: 0.85;
 }
 
-/* ============================================
-   ПОДПИСИ: 11 шт, каждая центрирована на своей риске
-   ============================================ */
+/* ПОДПИСИ */
 .filter-slider-scale {
   position: relative;
   height: 14px;
@@ -471,8 +475,6 @@ body {
   display: inline-block;
 }
 
-/* left = 8px + (100% − 16px) × доля.
-   Доля: 0 → 0, 20 → 0.1, 40 → 0.2, ..., 200 → 1.0 */
 .filter-slider-scale span:nth-child(1)  { left: 8px; }
 .filter-slider-scale span:nth-child(2)  { left: calc(8px + (100% - 16px) * 0.1); }
 .filter-slider-scale span:nth-child(3)  { left: calc(8px + (100% - 16px) * 0.2); }

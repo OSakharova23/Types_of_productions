@@ -65,10 +65,24 @@ export class ProductionTypesService {
     return this.production_types_list.filter((item) => item.status !== 'deleted');
   }
 
-  find_all_published(min_rate?: number) {
+  find_all_published(min_rate?: number, max_rate?: number) {
+    let effective_min = min_rate;
+    let effective_max = max_rate;
+
+    // Если минимальная норма больше максимальной, меняем их местами, чтобы фильтр не ломался
+    if (effective_min !== undefined && effective_max !== undefined && effective_min > effective_max) {
+      const temp = effective_min;
+      effective_min = effective_max;
+      effective_max = temp;
+    }
+
     return this.get_visible()
       .filter((item) => item.status === 'published')
-      .filter((item) => (min_rate ? item.production_output_rate >= min_rate : true));
+      .filter((item) => {
+        const meets_min = effective_min !== undefined ? item.production_output_rate >= effective_min : true;
+        const meets_max = effective_max !== undefined ? item.production_output_rate <= effective_max : true;
+        return meets_min && meets_max;
+      });
   }
 
   find_draft(): ProductionTypes | undefined {

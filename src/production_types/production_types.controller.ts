@@ -1,5 +1,5 @@
 import { Controller, Get, Param, Query, Render, Res } from '@nestjs/common';
-import type { Response } from 'express';
+import type { Response, Request } from 'express';
 import { ProductionTypesService } from './production_types.service.js';
 import { ProductionTypes } from './production_types.model.js';
 
@@ -10,9 +10,24 @@ export class ProductionTypesController {
   // 1. ПЛИТКА: GET /production_types
   @Get()
   @Render('production_types_tile')
-  render_tile(@Query('production_output_rate') production_output_rate?: string) {
-    const parsed_rate = production_output_rate ? Number(production_output_rate) : undefined;
-    const list = this.production_types_service.find_all_published(parsed_rate);
+  render_tile(@Query() query: { min_rate?: string; max_rate?: string }) {
+    let activeMin = query.min_rate && query.min_rate !== '' ? query.min_rate : '0';
+    let activeMax = query.max_rate && query.max_rate !== '' ? query.max_rate : '200';
+
+    let parsed_min = Number(activeMin);
+    let parsed_max = Number(activeMax);
+
+    // Если левое значение больше правого, меняем их местами и для отображения тоже!
+    if (parsed_min > parsed_max) {
+      const temp = parsed_min;
+      parsed_min = parsed_max;
+      parsed_max = temp;
+
+      activeMin = String(parsed_min);
+      activeMax = String(parsed_max);
+    }
+    
+    const list = this.production_types_service.find_all_published(parsed_min, parsed_max);
 
     const items_with_likes = list.map((item: ProductionTypes) => ({
       ...item,
@@ -21,7 +36,8 @@ export class ProductionTypesController {
 
     return {
       title: 'Типы производств',
-      search_rate: production_output_rate ?? '',
+      min_rate: activeMin,
+      max_rate: activeMax,
       productions: items_with_likes,
     };
   }

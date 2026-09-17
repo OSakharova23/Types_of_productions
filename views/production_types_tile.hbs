@@ -11,23 +11,37 @@
       <form action="/production_types" method="GET" class="filter-form">
         <div class="filter-slider-box">
           <div class="filter-slider-header">
-            <span class="filter-slider-label">Мин. норма выхода:</span>
+            <span class="filter-slider-label">Норма выхода:</span>
             <span class="filter-slider-value">
-              {{#if search_rate}}{{search_rate}} шт{{else}}все{{/if}}
+              {{min_rate}} - {{max_rate}} шт
             </span>
           </div>
 
-          <input
-            type="range"
-            name="production_output_rate"
-            min="0"
-            max="200"
-            step="5"
-            value="{{#if search_rate}}{{search_rate}}{{else}}0{{/if}}"
-            class="filter-slider"
-          >
+          <div class="range-slider-wrapper">
+            <div class="range-slider-track"></div>
+            <input
+              type="range"
+              name="min_rate"
+              min="0"
+              max="200"
+              step="5"
+              value="{{min_rate}}"
+              class="filter-slider"
+              title="Минимальная норма"
+            >
+            <input
+              type="range"
+              name="max_rate"
+              min="0"
+              max="200"
+              step="5"
+              value="{{max_rate}}"
+              class="filter-slider"
+              title="Максимальная норма"
+            >
+          </div>
 
-          <!-- Риски: 41 шт (шаг 5). Каждая 4-я — длинная (совпадает с подписью) -->
+          <!-- Риски: 41 шт (шаг 5). Каждая 4-я — длинная -->
           <div class="filter-slider-ticks" aria-hidden="true">
             <span></span><span></span><span></span><span></span><span></span>
             <span></span><span></span><span></span><span></span><span></span>
