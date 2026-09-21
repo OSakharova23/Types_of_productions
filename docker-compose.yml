@@ -1,6 +1,6 @@
 services:
   minio:
-    container_name: minio_storage
+    container_name: l1_production_types_minio
     image: minio/minio:latest
     ports:
       - "9000:9000"
@@ -13,5 +13,26 @@ services:
       - minio-data:/data
     command: server /data --console-address ":9001"
 
+  postgres:
+    image: postgres:15-alpine
+    container_name: production_types_postgres
+    environment:
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mypassword
+      POSTGRES_DB: production_types_db
+    ports:
+      - "5455:5432"
+    volumes:
+      - production_postgres_v3:/var/lib/postgresql/data
+
+  adminer:
+    image: adminer:latest
+    container_name: production_types_adminer
+    ports:
+      - "8081:8080"
+    depends_on:
+      - postgres
+
 volumes:
   minio-data:
+  production_postgres_v3:

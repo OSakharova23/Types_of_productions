@@ -11,39 +11,70 @@
       <div class="add-container">
         <h3>{{title}}</h3>
 
-        <div class="media-preview-box">
-          <img src="http://localhost:9000/production-types-media/{{draft.image_key}}" alt="Превью производства">
+        <form
+          action="{{#if hasDraft}}/production_types/draft/publish{{else}}/production_types/draft/next{{/if}}"
+          method="POST"
+          class="add-form"
+        >
+          <div class="media-preview-box">
+            <img
+              src="{{#if draft.image_key}}http://localhost:9000/production-types-media/{{draft.image_key}}{{else}}/img/default-image.jpg{{/if}}"
+              alt="Превью производства"
+            >
 
-          <label class="file-picker">
-            <span class="file-picker-label">ВЫБРАТЬ ИЗОБРАЖЕНИЕ</span>
-            <input type="file" accept="image/*" class="file-picker-input">
-          </label>
+            <label class="file-picker">
+              <span class="file-picker-label">ВЫБРАТЬ ИЗОБРАЖЕНИЕ</span>
+              <input type="file" accept="image/*" class="file-picker-input" name="image">
+            </label>
 
-          <video src="http://localhost:9000/production-types-media/{{draft.video_key}}" controls></video>
+            <video
+              src="{{#if draft.video_key}}http://localhost:9000/production-types-media/{{draft.video_key}}{{else}}/img/default-video.mp4{{/if}}"
+              controls
+            ></video>
+            <label class="file-picker">
+              <span class="file-picker-label">ВЫБРАТЬ ВИДЕО</span>
+              <input type="file" accept="video/*" class="file-picker-input" name="video">
+            </label>
+          </div>
 
-          <label class="file-picker">
-            <span class="file-picker-label">ВЫБРАТЬ ВИДЕО</span>
-            <input type="file" accept="video/*" class="file-picker-input">
-          </label>
-        </div>
-
-        <form>
           <div class="form-group">
             <label>Тип производства</label>
-            <input type="text" value="{{draft.craft_title}}">
+            <input
+              type="text"
+              name="craft_title"
+              value="{{draft.craft_title}}"
+              placeholder="Например: Гончарное производство"
+            >
           </div>
-          <div class="form-group">
-            <label>Описание</label>
-            <textarea rows="4">{{draft.description}}</textarea>
-          </div>
-          <div class="form-group">
-            <label>Норма выхода продукции (шт)</label>
-            <input type="number" value="{{draft.production_output_rate}}">
-          </div>
-          <div class="form-group">
-            <label>Количество отходов/брака (кг)</label>
-            <input type="number" value="{{draft.defect_waste_quantity}}">
-          </div>
+
+          {{#if hasDraft}}
+            <div class="form-group">
+              <label>Описание</label>
+              <textarea rows="4" name="description">{{draft.description}}</textarea>
+            </div>
+
+            <div class="form-group">
+              <label>Норма выхода продукции (шт)</label>
+              <input
+                type="number"
+                name="production_output_rate"
+                value="{{draft.production_output_rate}}"
+              >
+            </div>
+
+            <div class="form-group">
+              <label>Количество отходов/брака (кг)</label>
+              <input
+                type="number"
+                name="defect_waste_quantity"
+                value="{{draft.defect_waste_quantity}}"
+              >
+            </div>
+
+            <button type="submit" class="action-btn">Опубликовать</button>
+          {{else}}
+            <button type="submit" class="action-btn">Далее</button>
+          {{/if}}
         </form>
       </div>
     </div>

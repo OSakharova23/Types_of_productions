@@ -9,16 +9,17 @@
   <div class="mobile-viewport">
     <div class="content-area feed-screen">
       <video class="feed-video" autoplay loop muted playsinline>
-        <source src="http://localhost:9000/production-types-media/{{item.video_key}}" type="video/mp4">
+        <source
+          src="{{#if item.video_key}}http://localhost:9000/production-types-media/{{item.video_key}}{{else}}/img/default-video.mp4{{/if}}"
+          type="video/mp4"
+        >
       </video>
 
       <div class="feed-overlay">
-        <!-- Верх: заголовок -->
         <div class="feed-top">
           <h2 class="feed-title">{{item.craft_title}}</h2>
         </div>
 
-        <!-- Лайк + Следующий + параметры — на 100px ниже названия, справа -->
         <div class="feed-right">
           <div class="feed-like-clean">
             <span class="feed-like-icon">❤</span>
@@ -33,7 +34,6 @@
           </div>
         </div>
 
-        <!-- Описание внизу: 2 строки + «Ещё» в конце 2-й строки -->
         <div class="feed-info">
           <input type="checkbox" id="feed-expand" class="feed-expand-checkbox" hidden>
 

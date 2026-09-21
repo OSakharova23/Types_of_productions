@@ -1,108 +1,181 @@
 import { Injectable } from '@nestjs/common';
-import { ProductionTypes } from './production_types.model.js';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, Between, MoreThan } from 'typeorm';
+import { ProductionTypeEntity } from './entities/production_types.entity.js';
+import { LikeEntity } from './entities/like.entity.js';
+
+type ProductionWithLikes = ProductionTypeEntity & { likes_count: number };
 
 @Injectable()
 export class ProductionTypesService {
-  private readonly production_types_list: ProductionTypes[] = [
-    {
-      production_id: 1,
-      craft_title: 'Гончарное производство',
-      description: 'Гончарное производство - одно из древнейших ремёсел, освоенное человеком ещё в эпоху неолита. Глина формуется на ручном или ножном гончарном круге, затем обжигается в печи при температуре до 1000 °C. Изделия покрываются глазурью или ангобом, что придаёт им водонепроницаемость и декоративный вид. Каждый этап требует точного соблюдения влажности и времени сушки.',
-      production_output_rate: 150,
-      defect_waste_quantity: 18,
-      status: 'published',
-      image_key: 'pottery.jpg',
-      video_key: 'pottery_video.mp4',
-      user_liked_ids: [10, 15, 20],
-    },
-    {
-      production_id: 2,
-      craft_title: 'Металлургия',
-      description: 'Металлургия - ремесло обработки руды и металла, определившее развитие целых эпох. Мастера осваивали плавку в сыродутных горнах, ковку, литьё и чеканку. Из железа, меди, бронзы и серебра изготовляли орудия труда, оружие, украшения и монеты. Температура плавления, состав сплава и скорость охлаждения напрямую влияли на прочность и качество готовых изделий.',
-      production_output_rate: 40,
-      defect_waste_quantity: 65,
-      status: 'published',
-      image_key: 'metallurgy.jpg',
-      video_key: 'metallurgy_video.mp4',
-      user_liked_ids: [10, 33],
-    },
-    {
-      production_id: 3,
-      craft_title: 'Кожевенное дело',
-      description: 'Кожевенное дело - обработка шкур животных для получения мягкой, прочной и долговечной кожи. Шкуры вымачивают, золят, дубят растительными или минеральными веществами, затем размягчают и окрашивают. Из готовой кожи шили обувь, сумки, ремни, доспехи и конскую упряжь. Опытный кожевник различал десятки сортов кожи и знал, какая подходит для каждого изделия.',
-      production_output_rate: 85,
-      defect_waste_quantity: 12,
-      status: 'published',
-      image_key: 'leather.jpg',
-      video_key: 'leather_video.mp4',
-      user_liked_ids: [10, 15, 45, 99],
-    },
-    {
-      production_id: 4,
-      craft_title: 'Деревообработка',
-      description: 'Деревообработка - ремесло изготовления предметов из древесины. Мастера использовали топор, тесло, рубанок и пилу. Древесину сушили и обрабатывали воском или смолой. Из дерева строили дома, мебель, посуду и многое другое.',
-      production_output_rate: 60,
-      defect_waste_quantity: 30,
-      status: 'draft',
-      image_key: 'woodworking.jpg',
-      video_key: 'woodworking_video.mp4',
-      user_liked_ids: [],
-    },
-    {
-      production_id: 5,
-      craft_title: 'Ткачество',
-      description: 'Ткачество - производство ткани из пряжи на ткацком станке. Волокна льна, шерсти, хлопка или шёлка скручивались в нити, которые затем переплетались в продольном и поперечном направлениях. Плотность ткани, узор и качество зависели от сорта волокна и мастерства ткача. Из готового полотна шили одежду, постельные принадлежности, паруса и мешки.',
-      production_output_rate: 20,
-      defect_waste_quantity: 80,
-      status: 'deleted',
-      image_key: 'weaving.jpg',
-      video_key: 'weaving_video.mp4',
-      user_liked_ids: [],
-    },
-  ];
+  constructor(
+    @InjectRepository(ProductionTypeEntity)
+    private readonly productionRepo: Repository<ProductionTypeEntity>,
+    @InjectRepository(LikeEntity)
+    private readonly likeRepo: Repository<LikeEntity>,
+  ) {}
 
-  private get_visible(): ProductionTypes[] {
-    return this.production_types_list.filter((item) => item.status !== 'deleted');
-  }
+  async find_all_published(minRate = 0, maxRate = 200): Promise<ProductionWithLikes[]> {
+    const items = await productionRepoQueryFiltered(this.productionRepo, minRate, maxRate);
 
-  find_all_published(min_rate?: number, max_rate?: number) {
-    let effective_min = min_rate;
-    let effective_max = max_rate;
-
-    // Если минимальная норма больше максимальной, меняем их местами, чтобы фильтр не ломался
-    if (effective_min !== undefined && effective_max !== undefined && effective_min > effective_max) {
-      const temp = effective_min;
-      effective_min = effective_max;
-      effective_max = temp;
-    }
-
-    return this.get_visible()
-      .filter((item) => item.status === 'published')
-      .filter((item) => {
-        const meets_min = effective_min !== undefined ? item.production_output_rate >= effective_min : true;
-        const meets_max = effective_max !== undefined ? item.production_output_rate <= effective_max : true;
-        return meets_min && meets_max;
+    const result: ProductionWithLikes[] = [];
+    for (const item of items) {
+      const likesCount = await this.likeRepo.count({
+        where: { production_id: item.production_id },
       });
-  }
-
-  find_draft(): ProductionTypes | undefined {
-    return this.production_types_list.find((item) => item.status === 'draft');
-  }
-
-  find_feed_item(id?: number, next?: boolean): ProductionTypes | undefined {
-    const list = this.get_visible().filter((item) => item.status === 'published');
-    if (!id) return list[0];
-
-    const index = list.findIndex((item) => item.production_id === id);
-    if (index === -1) return list[0];
-
-    if (next) {
-      return list[index + 1] ?? list[0];
+      result.push({ ...item, likes_count: likesCount });
     }
-    return list[index];
+    return result;
   }
 
-  count_likes(item: ProductionTypes): number {
-    return item.user_liked_ids.length;
+  async find_draft(): Promise<ProductionTypeEntity | null> {
+    return this.productionRepo.findOne({
+      where: { status: 'draft', creator_id: 1 },
+    });
   }
+
+  async find_feed_item(id?: number, next?: boolean): Promise<ProductionWithLikes | null> {
+    let item: ProductionTypeEntity | null = null;
+
+    if (!id) {
+      // Получаем самую первую опубликованную карточку (LIMIT 1)
+      item = await this.productionRepo.findOne({
+        where: { status: 'published' },
+        order: { production_id: 'ASC' },
+      });
+    } else if (next) {
+      // Получаем следующую карточку (у которой ID больше текущего) одной строкой из БД
+      item = await this.productionRepo.findOne({
+        where: { 
+          status: 'published', 
+          production_id: MoreThan(id) 
+        },
+        order: { production_id: 'ASC' },
+      });
+
+      // Если следующей нет (дошли до конца), циклично возвращаем самую первую
+      if (!item) {
+        item = await this.productionRepo.findOne({
+          where: { status: 'published' },
+          order: { production_id: 'ASC' },
+        });
+      }
+    } else {
+      // Если просто передана конкретная ID
+      item = await this.productionRepo.findOne({
+        where: { production_id: id, status: 'published' },
+      });
+    }
+
+    if (!item) return null;
+
+    const likesCount = await this.countLikes(item.production_id);
+    return { ...item, likes_count: likesCount };
+  }
+
+  async countLikes(productionId: number): Promise<number> {
+    return this.likeRepo.count({ where: { production_id: productionId } });
+  }
+
+  // ========== ГРАНИЦЫ ДИАПАЗОНА ФИЛЬТРА (только published) ==========
+  async get_rate_bounds(): Promise<{ min: number; max: number }> {
+    const result = await this.productionRepo
+      .createQueryBuilder('p')
+      .select('MIN(p.production_output_rate)', 'min')
+      .addSelect('MAX(p.production_output_rate)', 'max')
+      .where('p.status = :status', { status: 'published' })
+      .getRawOne();
+
+    const min = Number(result?.min ?? 0);
+    const max = Number(result?.max ?? 200);
+
+    // если границы совпали (одна карточка или все одинаковые) — расширяем,
+    // чтобы слайдер не схлопнулся в точку
+    if (min === max) {
+      return { min: 0, max: max === 0 ? 200 : max };
+    }
+    return { min, max };
+  }
+
+  // ========== СОЗДАНИЕ ЧЕРНОВИКА (кнопка «Далее») ==========
+  async create_draft(data: {
+    craft_title?: string;
+    image_key?: string;
+    video_key?: string;
+  }): Promise<ProductionTypeEntity> {
+    const existing = await this.productionRepo.findOne({
+      where: { status: 'draft', creator_id: 1 },
+    });
+    if (existing) return existing;
+
+    const maxResult = await this.productionRepo
+      .createQueryBuilder('p')
+      .select('MAX(p.production_id)', 'max')
+      .getRawOne();
+    const newId = (Number(maxResult?.max) || 0) + 1;
+
+    const draft = new ProductionTypeEntity();
+    draft.production_id = newId;
+    draft.craft_title =
+      data.craft_title && data.craft_title.trim() !== ''
+        ? data.craft_title
+        : 'Новый тип производства';
+    draft.description = '';
+    draft.production_output_rate = 0;
+    draft.defect_waste_quantity = 0;
+    draft.status = 'draft';
+    draft.image_key = data.image_key ?? null;
+    draft.video_key = data.video_key ?? null;
+    draft.creator_id = 1;
+
+    return this.productionRepo.save(draft);
+  }
+
+  // ========== ПУБЛИКАЦИЯ ЧЕРНОВИКА (кнопка «Опубликовать») ==========
+  async publish_draft(data: {
+    craft_title: string;
+    description: string;
+    production_output_rate: number;
+    defect_waste_quantity: number;
+  }): Promise<void> {
+    const draft = await this.productionRepo.findOne({
+      where: { status: 'draft', creator_id: 1 },
+    });
+    if (!draft) return;
+
+    // ИЗМЕНЕНИЕ ЗДЕСЬ: проверяем на пустую строку
+    draft.craft_title =
+      data.craft_title && data.craft_title.trim() !== ''
+        ? data.craft_title
+        : 'Новый тип производства';
+
+    draft.description = data.description;
+    draft.production_output_rate = data.production_output_rate;
+    draft.defect_waste_quantity = data.defect_waste_quantity;
+    draft.status = 'published';
+    draft.formed_at = new Date();
+    await this.productionRepo.save(draft);
+  }
+
+  // ========== УДАЛЕНИЕ ЧЕРЕЗ SQL UPDATE БЕЗ ORM ==========
+  async softDeleteBySql(productionId: number): Promise<void> {
+    await this.productionRepo.query(
+      `UPDATE production_types SET status = 'deleted' WHERE production_id = $1`,
+      [productionId],
+    );
+  }
+}
+
+async function productionRepoQueryFiltered(
+  repo: Repository<ProductionTypeEntity>,
+  min: number,
+  max: number,
+): Promise<ProductionTypeEntity[]> {
+  return repo.find({
+    where: {
+      status: 'published',
+      production_output_rate: Between(Math.min(min, max), Math.max(min, max)),
+    },
+    order: { production_id: 'ASC' },
+  });
 }

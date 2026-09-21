@@ -22,9 +22,9 @@
             <input
               type="range"
               name="min_rate"
-              min="0"
-              max="200"
-              step="5"
+              min="{{slider_min}}"
+              max="{{slider_max}}"
+              step="1"
               value="{{min_rate}}"
               class="filter-slider"
               title="Минимальная норма"
@@ -32,41 +32,29 @@
             <input
               type="range"
               name="max_rate"
-              min="0"
-              max="200"
-              step="5"
+              min="{{slider_min}}"
+              max="{{slider_max}}"
+              step="1"
               value="{{max_rate}}"
               class="filter-slider"
               title="Максимальная норма"
             >
           </div>
 
-          <!-- Риски: 41 шт (шаг 5). Каждая 4-я — длинная -->
+          <!-- 11 рисок: по одной на каждую подпись -->
           <div class="filter-slider-ticks" aria-hidden="true">
-            <span></span><span></span><span></span><span></span><span></span>
-            <span></span><span></span><span></span><span></span><span></span>
-            <span></span><span></span><span></span><span></span><span></span>
-            <span></span><span></span><span></span><span></span><span></span>
-            <span></span><span></span><span></span><span></span><span></span>
-            <span></span><span></span><span></span><span></span><span></span>
             <span></span><span></span><span></span><span></span><span></span>
             <span></span><span></span><span></span><span></span><span></span>
             <span></span>
           </div>
 
-          <!-- Подписи: 0, 20, 40, ..., 200 — 11 шт -->
+          <!-- Подписи: slider_min, 9 промежуточных, slider_max -->
           <div class="filter-slider-scale">
-            <span>0</span>
-            <span>20</span>
-            <span>40</span>
-            <span>60</span>
-            <span>80</span>
-            <span>100</span>
-            <span>120</span>
-            <span>140</span>
-            <span>160</span>
-            <span>180</span>
-            <span>200</span>
+            <span>{{slider_min}}</span>
+            {{#each scale}}
+              <span>{{this}}</span>
+            {{/each}}
+            <span>{{slider_max}}</span>
           </div>
         </div>
         <button type="submit">НАЙТИ</button>
@@ -74,16 +62,30 @@
 
       <div class="tile-grid">
         {{#each productions}}
-        <a href="/production_types/feed/{{this.production_id}}" class="card">
-          <img src="http://localhost:9000/production-types-media/{{this.image_key}}" alt="{{this.craft_title}}" class="card-image">
-          <div class="card-info">
-            <p class="card-title">{{this.craft_title}}</p>
-            <p>Норма: {{this.production_output_rate}} шт</p>
-            <p style="color: #1A1A1A; font-size: 10px;">
+        <div class="card-wrapper">
+          <a href="/production_types/feed/{{this.production_id}}" class="card">
+            <img
+              src="{{#if this.image_key}}http://localhost:9000/production-types-media/{{this.image_key}}{{else}}/img/default-image.jpg{{/if}}"
+              alt="{{this.craft_title}}"
+              class="card-image"
+            >
+            <div class="card-info">
+              <p class="card-title">{{this.craft_title}}</p>
+              <p>Норма: {{this.production_output_rate}} шт</p>
+              <p style="color: #1A1A1A; font-size: 10px;">
                 <span style="color: #d62542;">❤</span> {{this.likes_count}}
-            </p>
-          </div>
-        </a>
+              </p>
+            </div>
+          </a>
+
+          <form
+            action="/production_types/delete/{{this.production_id}}"
+            method="POST"
+            class="delete-form"
+          >
+            <button type="submit" class="delete-btn" title="Удалить">✕</button>
+          </form>
+        </div>
         {{/each}}
       </div>
     </div>
