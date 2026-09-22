@@ -1,4 +1,5 @@
-import { Entity, PrimaryColumn, Column, CreateDateColumn } from 'typeorm';
+import { Entity, PrimaryColumn, Column, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { UserEntity } from './user.entity.js';
 
 @Entity('production_types')
 export class ProductionTypeEntity {
@@ -12,7 +13,7 @@ export class ProductionTypeEntity {
   description: string | null;
 
   @Column({ type: 'varchar', length: 50, default: 'draft' })
-  status: string; // draft, published, deleted
+  status: string;
 
   @Column({ type: 'varchar', nullable: true })
   image_key: string | null;
@@ -34,4 +35,8 @@ export class ProductionTypeEntity {
 
   @Column({ type: 'int', default: 1 })
   creator_id: number;
+
+  @ManyToOne(() => UserEntity, { onDelete: 'RESTRICT' })
+  @JoinColumn({ name: 'creator_id' })
+  creator: UserEntity;
 }

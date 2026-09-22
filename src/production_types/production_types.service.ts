@@ -61,7 +61,7 @@ export class ProductionTypesService {
         });
       }
     } else {
-      // Если просто передана конкретная ID
+      // Если передана конкретная ID
       item = await this.productionRepo.findOne({
         where: { production_id: id, status: 'published' },
       });
@@ -133,8 +133,8 @@ export class ProductionTypesService {
 
   // ========== ПУБЛИКАЦИЯ ЧЕРНОВИКА (кнопка «Опубликовать») ==========
   async publish_draft(data: {
-    craft_title: string;
-    description: string;
+    craft_title?: string;
+    description?: string;
     production_output_rate: number;
     defect_waste_quantity: number;
   }): Promise<void> {
@@ -143,13 +143,18 @@ export class ProductionTypesService {
     });
     if (!draft) return;
 
-    // ИЗМЕНЕНИЕ ЗДЕСЬ: проверяем на пустую строку
+    // Дефолтное название, если поле пустое или состоит из пробелов
     draft.craft_title =
       data.craft_title && data.craft_title.trim() !== ''
         ? data.craft_title
         : 'Новый тип производства';
 
-    draft.description = data.description;
+    // Если описание пустое или состоит из пробелов — пишем null
+    draft.description =
+      data.description && data.description.trim() !== ''
+        ? data.description
+        : null;
+
     draft.production_output_rate = data.production_output_rate;
     draft.defect_waste_quantity = data.defect_waste_quantity;
     draft.status = 'published';

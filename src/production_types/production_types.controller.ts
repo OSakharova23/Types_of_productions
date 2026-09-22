@@ -97,16 +97,25 @@ export class ProductionTypesController {
   ) {
     const parsed_id = Number(id);
     const is_next = next === 'true';
+    // Ищем элемент
     const item = await this.production_types_service.find_feed_item(parsed_id, is_next);
-
-    if (is_next && item) {
+    // Если элемент не найден (например, id удален и нет next), 
+    // или если запрашивали конкретный id, а он удален/не существует — редиректим на первую карточку
+    if (!item) {
+      return res.redirect('/production_types/feed');
+    }
+    if (is_next) {
       return res.redirect(`/production_types/feed/${item.production_id}`);
     }
-
+    // Если попытались зайти по ID удаленной услуги, делаем красивый редирект на ее реальный ID (или на первую)
+    // Сервис find_feed_item без next возвращает найденную, но если id не совпал (сработал фоллбек), можно перенаправить:
+    if (!is_next && item.production_id !== parsed_id) {
+      return res.redirect(`/production_types/feed/${item.production_id}`);
+    }
     return res.render('production_types_feed', {
-      title: item ? item.craft_title : 'Не найдено',
+      title: item.craft_title,
       item,
-      likes_count: item ? item.likes_count : 0,
+      likes_count: item.likes_count,
     });
   }
 

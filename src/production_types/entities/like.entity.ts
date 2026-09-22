@@ -1,10 +1,23 @@
-import { Entity, PrimaryColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
+import { UserEntity } from './user.entity.js';
+import { ProductionTypeEntity } from './production_types.entity.js';
 
 @Entity('likes')
 export class LikeEntity {
-  @PrimaryColumn()
+  @PrimaryGeneratedColumn()
+  id: number;
+
+  @Column({ type: 'int' })
   user_id: number;
 
-  @PrimaryColumn()
+  @Column({ type: 'int' })
   production_id: number;
+
+  @ManyToOne(() => UserEntity, { onDelete: 'RESTRICT' })
+  @JoinColumn({ name: 'user_id' })
+  user: UserEntity;
+
+  @ManyToOne(() => ProductionTypeEntity, { onDelete: 'RESTRICT' })
+  @JoinColumn({ name: 'production_id' })
+  production: ProductionTypeEntity;
 }
