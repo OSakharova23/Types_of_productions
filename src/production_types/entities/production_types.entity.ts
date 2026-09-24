@@ -15,17 +15,19 @@ export class ProductionTypeEntity {
   @Column({ type: 'varchar', length: 50, default: 'draft' })
   status: string;
 
-  @Column({ type: 'varchar', nullable: true })
-  image_key: string | null;
+  // URL обязательные
+  @Column({ type: 'varchar' })
+  image_key: string;
 
-  @Column({ type: 'varchar', nullable: true })
-  video_key: string | null;
+  @Column({ type: 'varchar' })
+  video_key: string;
 
-  @Column({ type: 'int' })
-  production_output_rate: number;
+  // Поля по теме nullable
+  @Column({ type: 'int', nullable: true })
+  production_output_rate: number | null;
 
-  @Column({ type: 'int' })
-  defect_waste_quantity: number;
+  @Column({ type: 'int', nullable: true })
+  defect_waste_quantity: number | null;
 
   @CreateDateColumn()
   created_at: Date;

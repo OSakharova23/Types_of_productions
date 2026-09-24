@@ -17,7 +17,6 @@ export class ProductionTypesService {
 
   async find_all_published(minRate = 0, maxRate = 200): Promise<ProductionWithLikes[]> {
     const items = await productionRepoQueryFiltered(this.productionRepo, minRate, maxRate);
-
     const result: ProductionWithLikes[] = [];
     for (const item of items) {
       const likesCount = await this.likeRepo.count({
@@ -98,6 +97,7 @@ export class ProductionTypesService {
   }
 
   // ========== СОЗДАНИЕ ЧЕРНОВИКА (кнопка «Далее») ==========
+    // ========== СОЗДАНИЕ ЧЕРНОВИКА (кнопка «Далее») ==========
   async create_draft(data: {
     craft_title?: string;
     image_key?: string;
@@ -120,23 +120,33 @@ export class ProductionTypesService {
       data.craft_title && data.craft_title.trim() !== ''
         ? data.craft_title
         : 'Новый тип производства';
-    draft.description = '';
-    draft.production_output_rate = 0;
-    draft.defect_waste_quantity = 0;
+    draft.description = null;
+
+    // URL обязательные — если пусто, ставим дефолтные имена файлов
+    draft.image_key =
+      data.image_key && data.image_key.trim() !== ''
+        ? data.image_key
+        : 'default-image.jpg';
+    draft.video_key =
+      data.video_key && data.video_key.trim() !== ''
+        ? data.video_key
+        : 'default-video.mp4';
+
+    draft.production_output_rate = null;
+    draft.defect_waste_quantity = null;
     draft.status = 'draft';
-    draft.image_key = data.image_key ?? null;
-    draft.video_key = data.video_key ?? null;
     draft.creator_id = 1;
 
     return this.productionRepo.save(draft);
   }
 
   // ========== ПУБЛИКАЦИЯ ЧЕРНОВИКА (кнопка «Опубликовать») ==========
+    // ========== ПУБЛИКАЦИЯ ЧЕРНОВИКА (кнопка «Опубликовать») ==========
   async publish_draft(data: {
     craft_title?: string;
     description?: string;
-    production_output_rate: number;
-    defect_waste_quantity: number;
+    production_output_rate: string;
+    defect_waste_quantity: string;
   }): Promise<void> {
     const draft = await this.productionRepo.findOne({
       where: { status: 'draft', creator_id: 1 },
@@ -149,20 +159,29 @@ export class ProductionTypesService {
         ? data.craft_title
         : 'Новый тип производства';
 
-    // Если описание пустое или состоит из пробелов — пишем null
+    // Если описание пустое — пишем null
     draft.description =
       data.description && data.description.trim() !== ''
         ? data.description
         : null;
 
-    draft.production_output_rate = data.production_output_rate;
-    draft.defect_waste_quantity = data.defect_waste_quantity;
+    // Если число не введено — пишем null, иначе конвертируем строку в число
+    draft.production_output_rate =
+      data.production_output_rate && data.production_output_rate.trim() !== ''
+        ? Number(data.production_output_rate)
+        : null;
+
+    draft.defect_waste_quantity =
+      data.defect_waste_quantity && data.defect_waste_quantity.trim() !== ''
+        ? Number(data.defect_waste_quantity)
+        : null;
+
     draft.status = 'published';
     draft.formed_at = new Date();
     await this.productionRepo.save(draft);
   }
 
-  // ========== УДАЛЕНИЕ ЧЕРЕЗ SQL UPDATE БЕЗ ORM ==========
+  // ========== УДАЛЕНИЕ ЧЕРЕЗ SQL UPDATE ==========
   async softDeleteBySql(productionId: number): Promise<void> {
     await this.productionRepo.query(
       `UPDATE production_types SET status = 'deleted' WHERE production_id = $1`,

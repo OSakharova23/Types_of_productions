@@ -21,39 +21,27 @@ export class ProductionTypesController {
   @Get()
   @Render('production_types_tile')
   async render_tile(@Query() query: { min_rate?: string; max_rate?: string }) {
-    // Границы диапазона берём из БД (только published)
-    const bounds = await this.production_types_service.get_rate_bounds();
-
-    // Что выбрал пользователь. Если пусто — берём весь диапазон
-    let activeMin =
+    const bounds = await this.production_types_service.get_rate_bounds(); // Границы диапазона берём из БД (только published)
+    let activeMin = // Что выбрал пользователь. Если пусто — берём весь диапазон
       query.min_rate && query.min_rate !== '' ? Number(query.min_rate) : bounds.min;
     let activeMax =
       query.max_rate && query.max_rate !== '' ? Number(query.max_rate) : bounds.max;
-
-    // Защита от некорректного порядка
-    if (activeMin > activeMax) {
+    if (activeMin > activeMax) { // Защита от некорректного порядка
       const temp = activeMin;
       activeMin = activeMax;
       activeMax = temp;
     }
-
-    // Зажимаем в границы
     activeMin = Math.max(bounds.min, Math.min(bounds.max, activeMin));
     activeMax = Math.max(bounds.min, Math.min(bounds.max, activeMax));
-
     const productions = await this.production_types_service.find_all_published(
       activeMin,
       activeMax,
     );
-
-    // 11 подписей на шкале: slider_min, 9 промежуточных, slider_max
-    // Промежуточные считаются равными долями от (slider_max - slider_min) / 10
-    const step = (bounds.max - bounds.min) / 10;
+    const step = (bounds.max - bounds.min) / 10; // 11 подписей на шкале: slider_min, 9 промежуточных, slider_max. Промежуточные считаются равными долями от (slider_max - slider_min) / 10
     const scale: number[] = [];
-    for (let i = 1; i <= 9; i++) {
+    for (let i = 1; i <= 9; i++) { 
       scale.push(Math.round(bounds.min + step * i));
     }
-
     return {
       title: 'Типы производств',
       min_rate: activeMin,
@@ -97,19 +85,14 @@ export class ProductionTypesController {
   ) {
     const parsed_id = Number(id);
     const is_next = next === 'true';
-    // Ищем элемент
     const item = await this.production_types_service.find_feed_item(parsed_id, is_next);
-    // Если элемент не найден (например, id удален и нет next), 
-    // или если запрашивали конкретный id, а он удален/не существует — редиректим на первую карточку
-    if (!item) {
+    if (!item) { // Если элемент не найден (например, id удален и нет next), или если запрашивали конкретный id, а он удален/не существует — редиректим на первую карточку
       return res.redirect('/production_types/feed');
     }
     if (is_next) {
       return res.redirect(`/production_types/feed/${item.production_id}`);
     }
-    // Если попытались зайти по ID удаленной услуги, делаем красивый редирект на ее реальный ID (или на первую)
-    // Сервис find_feed_item без next возвращает найденную, но если id не совпал (сработал фоллбек), можно перенаправить:
-    if (!is_next && item.production_id !== parsed_id) {
+    if (!is_next && item.production_id !== parsed_id) { // редерикт
       return res.redirect(`/production_types/feed/${item.production_id}`);
     }
     return res.render('production_types_feed', {
@@ -133,6 +116,7 @@ export class ProductionTypesController {
   }
 
   // 6. ПУБЛИКАЦИЯ ЧЕРНОВИКА (кнопка «Опубликовать»): POST /production_types/draft/publish
+    // 6. ПУБЛИКАЦИЯ ЧЕРНОВИКА (кнопка «Опубликовать»): POST /production_types/draft/publish
   @Post('draft/publish')
   @Redirect('/production_types', 302)
   async publish_draft(
@@ -147,8 +131,8 @@ export class ProductionTypesController {
     await this.production_types_service.publish_draft({
       craft_title: body.craft_title,
       description: body.description,
-      production_output_rate: Number(body.production_output_rate) || 0,
-      defect_waste_quantity: Number(body.defect_waste_quantity) || 0,
+      production_output_rate: body.production_output_rate,
+      defect_waste_quantity: body.defect_waste_quantity,
     });
   }
 

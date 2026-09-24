@@ -47,7 +47,6 @@ body {
   overflow-y: auto;
   scrollbar-width: thin;
 }
-
 /* НИЖНЯЯ ПАНЕЛЬ НАВИГАЦИИ */
 .tabbar {
   height: 52px;
@@ -108,14 +107,25 @@ body {
 }
 
 .feed-right {
-  margin-top: 200px;
+  margin-top: 250px;
   align-self: flex-end;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 8px;
-  max-width: 60%;
+  gap: 6px;
   flex-shrink: 0;
+}
+
+.feed-params {
+  margin-top: 4px;
+  font-size: 11px;
+  line-height: 1.35;
+  text-align: right;
+  /* «Норма» будет напротив 1-й строки, «Брак» — напротив ещё (чуть ниже) */
+}
+
+.feed-params p {
+  margin: 0 0 1px 0;
 }
 
 .feed-like-clean {
@@ -124,14 +134,14 @@ body {
   align-items: center;
   gap: 1px;
   color: #fff;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 600;
   text-shadow: 0 1px 4px rgba(0,0,0,0.8);
   align-self: flex-end;
 }
 
 .feed-like-icon {
-  font-size: 22px;
+  font-size: 28px;
   line-height: 1;
 }
 
@@ -140,7 +150,7 @@ body {
   border: none;
   padding: 0;
   color: #ffffff;
-  font-size: 16px;
+  font-size: 22px;
   font-weight: 700;
   line-height: 1;
   text-decoration: none;
@@ -148,70 +158,110 @@ body {
   transition: transform 0.15s ease, opacity 0.2s ease;
   display: inline-block;
   cursor: pointer;
+  transform: translateX(-2px);
 }
 
 .feed-btn:hover {
-  transform: translateX(3px);
+  transform: translateX(1px);
   opacity: 0.85;
-}
-
-.feed-params {
-  font-size: 11px;
-  line-height: 1.4;
-  text-align: right;
-}
-
-.feed-params p {
-  margin: 0 0 2px 0;
 }
 
 .feed-info {
   margin-top: auto;
-  position: relative;
-  width: 100%;
+  width: 100%;                   /* на всю ширину экрана */
+  display: grid;
+  grid-template-columns: 1fr auto;  /* описание — растягивается, Норма/Брак — по размеру */
+  grid-template-rows: auto auto;
+  column-gap: 10px;              /* отступ между колонками */
+  align-items: start;
+  transition: width 0.2s ease;
 }
 
 .feed-desc {
+  grid-column: 1;
+  grid-row: 1 / span 2;
   margin: 0;
   font-size: 11px;
   line-height: 1.45;
-  text-align: justify;
+  text-align: justify;           /* было left */
   hyphens: auto;
   color: #fff;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: clip;
-  padding-right: 40px;
 }
 
-.feed-expand-checkbox:checked ~ .feed-desc {
-  -webkit-line-clamp: unset;
-  display: block;
-  padding-right: 0;
+.feed-param-norma {
+  grid-column: 2;
+  grid-row: 1;
+  margin-top: 2px;               /* вертикальный отступ от 1-й строки */
+  font-size: 11px;
+  line-height: 1.45;
+  text-align: right;
+  white-space: nowrap;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
+}
+
+.feed-row-bottom {
+  grid-column: 2;
+  grid-row: 2;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 60px;                     /* отступ между «Ещё» и «Брак» */
+  font-size: 11px;
+  line-height: 1.45;
+  white-space: nowrap;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
 }
 
 .feed-more-label {
-  position: absolute;
-  right: 0;
-  bottom: 2px;
   cursor: pointer;
-  color: #fff;
   font-weight: 600;
   font-size: 11px;
   user-select: none;
-  padding: 0 2px;
   background: none;
-  line-height: 1.45;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
 }
 
 .feed-more-close { display: none; }
 
-.feed-expand-checkbox:checked ~ .feed-more-label .feed-more-open { display: none; }
-.feed-expand-checkbox:checked ~ .feed-more-label .feed-more-close { display: inline; }
+/* === Раскрытое состояние === */
+
+.feed-expand-checkbox:checked ~ .feed-info {
+  display: block;                /* отключаем grid, чтобы описание шло в поток */
+}
+
+.feed-expand-checkbox:checked ~ .feed-info .feed-desc {
+  -webkit-line-clamp: unset;
+  line-clamp: unset;
+  display: block;
+}
+
+.feed-expand-checkbox:checked ~ .feed-info .feed-param-norma,
+.feed-expand-checkbox:checked ~ .feed-info .feed-param-brak {
+  display: none;
+}
+
+.feed-expand-checkbox:checked ~ .feed-info .feed-row-bottom {
+  display: block;
+  text-align: right;
+  margin-top: 4px;
+}
+
+.feed-expand-checkbox:checked ~ .feed-info .feed-more-label {
+  display: inline-block;
+  text-align: right;
+}
+
+.feed-expand-checkbox:checked ~ .feed-info .feed-more-label .feed-more-open { display: none; }
+.feed-expand-checkbox:checked ~ .feed-info .feed-more-label .feed-more-close { display: inline; }
 
 /* ЭКРАН ДОБАВЛЕНИЯ (ADD) */
 .add-container {
@@ -560,26 +610,26 @@ body {
 }
 
 .action-btn {
-  width: 100%;
-  padding: 8px 8px;
+  align-self: flex-end;
+  width: auto;
+  padding: 8px 14px;
   margin-top: 10px;
-  background: #ffffff;
+  background: transparent;
   color: #000000;
-  border: 1px solid #d9d9d9;
+  border: none;
   border-radius: 0;
   font-family: Arial, sans-serif;
-  font-size: 12px;
+  font-size: 13px;                /* как у file-picker-label */
   font-weight: 500;
-  letter-spacing: 0.3px;
-  text-transform: none;
+  letter-spacing: 0.3px;          /* тоже как у file-picker-label */
+  text-transform: uppercase;
   cursor: pointer;
-  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  transition: color 0.2s ease;
 }
 
 .action-btn:hover {
-  background: #f4f4f4;
-  border-color: #f4f4f4;
-  color: #000000;
+  background: transparent;
+  color: #4c4c4c;
 }
 
 .action-btn:active {
@@ -587,41 +637,42 @@ body {
 }
 
 /* ===== Обёртка карточки с кнопкой удаления ===== */
+/* Обёртка карточки — держит и ссылку, и кнопку удаления */
 .card-wrapper {
   position: relative;
   display: flex;
   flex-direction: column;
 }
 
+/* Ссылка-карточка растягивается на весь wrapper */
+.card-wrapper .card {
+  flex: 1;
+}
+
+/* Кнопка удаления — поверх карточки, в правом нижнем углу */
 .delete-form {
   position: absolute;
-  top: 4px;
-  right: 4px;
+  right: 6px;
+  bottom: 6px;
   margin: 0;
   padding: 0;
   z-index: 5;
 }
 
-.delete-btn {
-  width: 22px;
-  height: 22px;
-  padding: 0;
-  border-radius: 50%;
-  border: 1px solid #d9d9d9;
-  background: #ffffff;
+.delete-link {
+  padding: 2px 4px;
+  background: transparent;
   color: #000000;
-  font-size: 11px;
-  font-weight: 700;
-  line-height: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  border: none;
+  border-radius: 0;
   cursor: pointer;
-  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  font-family: Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  transition: color 0.2s ease;
 }
 
-.delete-btn:hover {
-  background: #f4f4f4;
-  border-color: #f4f4f4;
-  color: #000000;
+.delete-link:hover {
+  color: #4c4c4c;
 }

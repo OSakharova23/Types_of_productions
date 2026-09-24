@@ -18,7 +18,8 @@
         >
           <div class="media-preview-box">
             <img
-              src="{{#if draft.image_key}}http://localhost:9000/production-types-media/{{draft.image_key}}{{else}}/img/default-image.jpg{{/if}}"
+              src="http://localhost:9000/production-types-media/{{draft.image_key}}"
+              onerror="this.onerror=null; this.src='/img/default-image.jpg';"
               alt="Превью производства"
             >
 
@@ -28,7 +29,8 @@
             </label>
 
             <video
-              src="{{#if draft.video_key}}http://localhost:9000/production-types-media/{{draft.video_key}}{{else}}/img/default-video.mp4{{/if}}"
+              src="http://localhost:9000/production-types-media/{{draft.video_key}}"
+              onerror="this.onerror=null; this.src='/img/default-video.mp4';"
               controls
             ></video>
             <label class="file-picker">
@@ -44,13 +46,14 @@
               name="craft_title"
               value="{{draft.craft_title}}"
               placeholder="Например: Гончарное производство"
+              required
             >
           </div>
 
           {{#if hasDraft}}
             <div class="form-group">
               <label>Описание</label>
-              <textarea rows="4" name="description">{{draft.description}}</textarea>
+              <textarea rows="4" name="description" required>{{draft.description}}</textarea>
             </div>
 
             <div class="form-group">
@@ -58,7 +61,8 @@
               <input
                 type="number"
                 name="production_output_rate"
-                value="{{draft.production_output_rate}}"
+                value="{{#if draft.production_output_rate}}{{draft.production_output_rate}}{{/if}}"
+                required
               >
             </div>
 
@@ -67,7 +71,8 @@
               <input
                 type="number"
                 name="defect_waste_quantity"
-                value="{{draft.defect_waste_quantity}}"
+                value="{{#if draft.defect_waste_quantity}}{{draft.defect_waste_quantity}}{{/if}}"
+                required
               >
             </div>
 

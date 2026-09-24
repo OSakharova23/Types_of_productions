@@ -7,7 +7,7 @@
 </head>
 <body>
   <div class="mobile-viewport">
-    <div class="content-area">
+    <div class="content-area content-area--scroll">
       <form action="/production_types" method="GET" class="filter-form">
         <div class="filter-slider-box">
           <div class="filter-slider-header">
@@ -41,14 +41,12 @@
             >
           </div>
 
-          <!-- 11 рисок: по одной на каждую подпись -->
           <div class="filter-slider-ticks" aria-hidden="true">
             <span></span><span></span><span></span><span></span><span></span>
             <span></span><span></span><span></span><span></span><span></span>
             <span></span>
           </div>
 
-          <!-- Подписи: slider_min, 9 промежуточных, slider_max -->
           <div class="filter-slider-scale">
             <span>{{slider_min}}</span>
             {{#each scale}}
@@ -65,7 +63,8 @@
         <div class="card-wrapper">
           <a href="/production_types/feed/{{this.production_id}}" class="card">
             <img
-              src="{{#if this.image_key}}http://localhost:9000/production-types-media/{{this.image_key}}{{else}}/img/default-image.jpg{{/if}}"
+              src="http://localhost:9000/production-types-media/{{this.image_key}}"
+              onerror="this.onerror=null; this.src='/img/default-image.jpg';"
               alt="{{this.craft_title}}"
               class="card-image"
             >
@@ -83,7 +82,7 @@
             method="POST"
             class="delete-form"
           >
-            <button type="submit" class="delete-btn" title="Удалить">✕</button>
+            <button type="submit" class="delete-link">Удалить</button>
           </form>
         </div>
         {{/each}}
