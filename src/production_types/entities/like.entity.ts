@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
-import { UserEntity } from './user.entity.js';
+import { UserEntity } from '../../users/entities/user.entity.js';
 import { ProductionTypeEntity } from './production_types.entity.js';
 
 @Entity('likes')

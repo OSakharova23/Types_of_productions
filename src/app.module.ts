@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ProductionTypesModule } from './production_types/production_types.module.js';
+import { UsersModule } from './users/users.module.js';
 
 @Module({
   imports: [
@@ -17,10 +18,11 @@ import { ProductionTypesModule } from './production_types/production_types.modul
         password: config.get('DB_PASSWORD'),
         database: config.get('DB_DATABASE'),
         autoLoadEntities: true,
-        synchronize: false, // Отключаем автосинхронизацию, используем миграции
+        synchronize: false,
       }),
     }),
     ProductionTypesModule,
+    UsersModule,
   ],
 })
 export class AppModule {}

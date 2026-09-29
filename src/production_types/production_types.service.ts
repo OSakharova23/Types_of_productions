@@ -1,10 +1,15 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between, MoreThan } from 'typeorm';
 import { ProductionTypeEntity } from './entities/production_types.entity.js';
 import { LikeEntity } from './entities/like.entity.js';
-
-type ProductionWithLikes = ProductionTypeEntity & { likes_count: number };
+import { UserEntity } from '../users/entities/user.entity.js';
+import { MinioSimpleService } from './minio.service.js';
+import { getCurrentUserId } from '../common/current-user.js';
+import { ProductionFiltersDto } from './dto/production-filters.dto.js';
+import { CreateProductionDto } from './dto/create-production.dto.js';
+import { UpdateProductionDto } from './dto/update-production.dto.js';
+import 'multer';
 
 @Injectable()
 export class ProductionTypesService {
@@ -13,193 +18,183 @@ export class ProductionTypesService {
     private readonly productionRepo: Repository<ProductionTypeEntity>,
     @InjectRepository(LikeEntity)
     private readonly likeRepo: Repository<LikeEntity>,
+    @InjectRepository(UserEntity)
+    private readonly userRepo: Repository<UserEntity>,
+    private readonly minioService: MinioSimpleService,
   ) {}
 
-  async find_all_published(minRate = 0, maxRate = 200): Promise<ProductionWithLikes[]> {
-    const items = await productionRepoQueryFiltered(this.productionRepo, minRate, maxRate);
-    const result: ProductionWithLikes[] = [];
-    for (const item of items) {
-      const likesCount = await this.likeRepo.count({
-        where: { production_id: item.production_id },
-      });
-      result.push({ ...item, likes_count: likesCount });
-    }
-    return result;
+  private async mapResponse(item: ProductionTypeEntity) {
+    const likesCount = await this.likeRepo.count({ where: { production_id: item.production_id } });
+    const isCreator = item.creator_id === getCurrentUserId() ? 1 : 0;
+
+    return {
+      production_id: item.production_id,
+      craft_title: item.craft_title,
+      description: item.description ?? null,
+      production_output_rate: item.production_output_rate ?? null,
+      defect_waste_quantity: item.defect_waste_quantity ?? null,
+      image_url: (await this.minioService.getSignedUrl(item.image_key)) ?? null,
+      video_url: (await this.minioService.getSignedUrl(item.video_key)) ?? null,
+      likes_count: likesCount,
+      is_creator: isCreator,
+      created_at: item.created_at,
+      formed_at: item.formed_at ?? null,
+    };
   }
 
-  async find_draft(): Promise<ProductionTypeEntity | null> {
-    return this.productionRepo.findOne({
-      where: { status: 'draft', creator_id: 1 },
+  async find_all_published(filters: ProductionFiltersDto) {
+    const min = filters.min_rate ?? 0;
+    const max = filters.max_rate ?? 200;
+
+    const items = await this.productionRepo.find({
+      where: {
+        status: 'published',
+        production_output_rate: Between(Math.min(min, max), Math.max(min, max)),
+      },
+      order: { production_id: 'ASC' },
+      relations: { creator: true },
     });
+
+    return Promise.all(items.map(item => this.mapResponse(item)));
   }
 
-  async find_feed_item(id?: number, next?: boolean): Promise<ProductionWithLikes | null> {
+  async find_feed_item(id?: number, next?: boolean) {
     let item: ProductionTypeEntity | null = null;
 
     if (!id) {
-      // Получаем самую первую опубликованную карточку (LIMIT 1)
       item = await this.productionRepo.findOne({
         where: { status: 'published' },
         order: { production_id: 'ASC' },
+        relations: { creator: true },
       });
     } else if (next) {
-      // Получаем следующую карточку (у которой ID больше текущего) одной строкой из БД
       item = await this.productionRepo.findOne({
-        where: { 
-          status: 'published', 
-          production_id: MoreThan(id) 
-        },
+        where: { status: 'published', production_id: MoreThan(id) },
         order: { production_id: 'ASC' },
+        relations: { creator: true },
       });
-
-      // Если следующей нет (дошли до конца), циклично возвращаем самую первую
       if (!item) {
         item = await this.productionRepo.findOne({
           where: { status: 'published' },
           order: { production_id: 'ASC' },
+          relations: { creator: true },
         });
       }
     } else {
-      // Если передана конкретная ID
       item = await this.productionRepo.findOne({
         where: { production_id: id, status: 'published' },
+        relations: { creator: true },
       });
     }
 
-    if (!item) return null;
-
-    const likesCount = await this.countLikes(item.production_id);
-    return { ...item, likes_count: likesCount };
+    if (!item) throw new NotFoundException();
+    return this.mapResponse(item);
   }
 
-  async countLikes(productionId: number): Promise<number> {
-    return this.likeRepo.count({ where: { production_id: productionId } });
-  }
-
-  // ========== ГРАНИЦЫ ДИАПАЗОНА ФИЛЬТРА (только published) ==========
-  async get_rate_bounds(): Promise<{ min: number; max: number }> {
-    const result = await this.productionRepo
-      .createQueryBuilder('p')
-      .select('MIN(p.production_output_rate)', 'min')
-      .addSelect('MAX(p.production_output_rate)', 'max')
-      .where('p.status = :status', { status: 'published' })
-      .getRawOne();
-
-    const min = Number(result?.min ?? 0);
-    const max = Number(result?.max ?? 200);
-
-    // если границы совпали (одна карточка или все одинаковые) — расширяем,
-    // чтобы слайдер не схлопнулся в точку
-    if (min === max) {
-      return { min: 0, max: max === 0 ? 200 : max };
-    }
-    return { min, max };
-  }
-
-  // ========== СОЗДАНИЕ ЧЕРНОВИКА (кнопка «Далее») ==========
-    // ========== СОЗДАНИЕ ЧЕРНОВИКА (кнопка «Далее») ==========
-  async create_draft(data: {
-    craft_title?: string;
-    image_key?: string;
-    video_key?: string;
-  }): Promise<ProductionTypeEntity> {
-    const existing = await this.productionRepo.findOne({
-      where: { status: 'draft', creator_id: 1 },
+  async find_draft() {
+    const draft = await this.productionRepo.findOne({
+      where: { status: 'draft', creator_id: getCurrentUserId() },
+      relations: { creator: true },
     });
-    if (existing) return existing;
+    if (!draft) return null;
+    return this.mapResponse(draft);
+  }
 
-    const maxResult = await this.productionRepo
+  async create_draft(
+    dto: CreateProductionDto,
+    image?: Express.Multer.File,
+    video?: Express.Multer.File,
+  ) {
+    const existing = await this.productionRepo.findOne({
+      where: { status: 'draft', creator_id: getCurrentUserId() },
+    });
+    if (existing) throw new BadRequestException();
+
+    const user = await this.userRepo.findOne({ where: { user_id: getCurrentUserId() } });
+    if (!user) throw new NotFoundException();
+
+    const maxRes = await this.productionRepo
       .createQueryBuilder('p')
       .select('MAX(p.production_id)', 'max')
       .getRawOne();
-    const newId = (Number(maxResult?.max) || 0) + 1;
+    const newId = (Number(maxRes?.max) || 0) + 1;
 
-    const draft = new ProductionTypeEntity();
-    draft.production_id = newId;
-    draft.craft_title =
-      data.craft_title && data.craft_title.trim() !== ''
-        ? data.craft_title
-        : 'Новый тип производства';
-    draft.description = null;
+    const draft = this.productionRepo.create({
+      production_id: newId,
+      craft_title: dto.craft_title,
+      description: dto.description ?? null,
+      status: 'draft',
+      creator_id: getCurrentUserId(),
+      image_key: 'default-image.jpg',
+      video_key: 'default-video.mp4',
+    });
 
-    // URL обязательные — если пусто, ставим дефолтные имена файлов
-    draft.image_key =
-      data.image_key && data.image_key.trim() !== ''
-        ? data.image_key
-        : 'default-image.jpg';
-    draft.video_key =
-      data.video_key && data.video_key.trim() !== ''
-        ? data.video_key
-        : 'default-video.mp4';
+    let saved = await this.productionRepo.save(draft);
 
-    draft.production_output_rate = null;
-    draft.defect_waste_quantity = null;
-    draft.status = 'draft';
-    draft.creator_id = 1;
+    if (image) {
+      saved.image_key = await this.minioService.uploadMedia(image.buffer, image.originalname, saved.production_id, 'image');
+    }
+    if (video) {
+      saved.video_key = await this.minioService.uploadMedia(video.buffer, video.originalname, saved.production_id, 'video');
+    }
 
-    return this.productionRepo.save(draft);
+    saved = await this.productionRepo.save(saved);
+    return this.mapResponse(saved);
   }
 
-  // ========== ПУБЛИКАЦИЯ ЧЕРНОВИКА (кнопка «Опубликовать») ==========
-    // ========== ПУБЛИКАЦИЯ ЧЕРНОВИКА (кнопка «Опубликовать») ==========
-  async publish_draft(data: {
-    craft_title?: string;
-    description?: string;
-    production_output_rate: string;
-    defect_waste_quantity: string;
-  }): Promise<void> {
+  async publish_draft(id: number, dto: UpdateProductionDto) {
     const draft = await this.productionRepo.findOne({
-      where: { status: 'draft', creator_id: 1 },
+      where: { production_id: id, status: 'draft', creator_id: getCurrentUserId() },
+      relations: { creator: true },
     });
-    if (!draft) return;
+    if (!draft) throw new NotFoundException();
 
-    // Дефолтное название, если поле пустое или состоит из пробелов
-    draft.craft_title =
-      data.craft_title && data.craft_title.trim() !== ''
-        ? data.craft_title
-        : 'Новый тип производства';
-
-    // Если описание пустое — пишем null
-    draft.description =
-      data.description && data.description.trim() !== ''
-        ? data.description
-        : null;
-
-    // Если число не введено — пишем null, иначе конвертируем строку в число
-    draft.production_output_rate =
-      data.production_output_rate && data.production_output_rate.trim() !== ''
-        ? Number(data.production_output_rate)
-        : null;
-
-    draft.defect_waste_quantity =
-      data.defect_waste_quantity && data.defect_waste_quantity.trim() !== ''
-        ? Number(data.defect_waste_quantity)
-        : null;
+    if (dto.craft_title) draft.craft_title = dto.craft_title;
+    if (dto.description !== undefined) draft.description = dto.description ?? null;
+    if (dto.production_output_rate !== undefined) draft.production_output_rate = dto.production_output_rate;
+    if (dto.defect_waste_quantity !== undefined) draft.defect_waste_quantity = dto.defect_waste_quantity;
 
     draft.status = 'published';
     draft.formed_at = new Date();
+
     await this.productionRepo.save(draft);
+    return this.mapResponse(draft);
   }
 
-  // ========== УДАЛЕНИЕ ЧЕРЕЗ SQL UPDATE ==========
-  async softDeleteBySql(productionId: number): Promise<void> {
+  // Исправление 1: Проверка существования и принадлежности перед мягким удалением (возвращает 404)
+  async softDeleteBySql(id: number): Promise<void> {
+    const existing = await this.productionRepo.findOne({
+      where: { production_id: id, creator_id: getCurrentUserId() },
+    });
+    if (!existing || existing.status === 'deleted') {
+      throw new NotFoundException();
+    }
+
     await this.productionRepo.query(
-      `UPDATE production_types SET status = 'deleted' WHERE production_id = $1`,
-      [productionId],
+      `UPDATE production_types SET status = 'deleted' WHERE production_id = $1 AND creator_id = $2`,
+      [id, getCurrentUserId()],
     );
   }
-}
 
-async function productionRepoQueryFiltered(
-  repo: Repository<ProductionTypeEntity>,
-  min: number,
-  max: number,
-): Promise<ProductionTypeEntity[]> {
-  return repo.find({
-    where: {
-      status: 'published',
-      production_output_rate: Between(Math.min(min, max), Math.max(min, max)),
-    },
-    order: { production_id: 'ASC' },
-  });
+  // Исправление 2: Лайкать можно только опубликованные (published) услуги
+  async handleLike(productionId: number, action: number): Promise<void> {
+    const service = await this.productionRepo.findOne({
+      where: { production_id: productionId, status: 'published' },
+    });
+    if (!service) throw new NotFoundException();
+
+    const existingLike = await this.likeRepo.findOne({
+      where: { production_id: productionId, user_id: getCurrentUserId() },
+    });
+
+    if (action === 1 && !existingLike) {
+      const newLike = this.likeRepo.create({
+        production_id: productionId,
+        user_id: getCurrentUserId(),
+      });
+      await this.likeRepo.save(newLike);
+    } else if (action === 0 && existingLike) {
+      await this.likeRepo.remove(existingLike);
+    }
+  }
 }

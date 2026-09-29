@@ -1,25 +1,23 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module.js';
-import { NestExpressApplication } from '@nestjs/platform-express';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
-import { engine } from 'express-handlebars';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+import { ValidationPipe, ClassSerializerInterceptor } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule);
-
-  app.useStaticAssets(join(__dirname, '..', 'public'));
-  app.setBaseViewsDir(join(__dirname, '..', 'views'));
+  const app = await NestFactory.create(AppModule);
   
-  app.engine('hbs', engine({
-    extname: 'hbs',
-    defaultLayout: false,
-    partialsDir: join(__dirname, '..', 'views/partials'),
+  // Требование: в начале адреса каждого метода должен быть /api
+  app.setGlobalPrefix('api');
+
+  // Глобальная валидация входных данных через class-validator
+  app.useGlobalPipes(new ValidationPipe({
+    whitelist: true,
+    forbidNonWhitelisted: true,
+    transform: true,
   }));
-  app.setViewEngine('hbs');
+
+  // Автоматическое применение декораторов @Exclude() в сущностях
+  app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
 
   await app.listen(process.env.PORT ?? 3000);
 }
