@@ -31,13 +31,12 @@ export class ProductionTypesController {
     return this.productionTypesService.find_all_published(filters);
   }
 
-  @Get('feed')
-  async getFeed(
-    @Query('id') id?: string,
+  @Get('feed/:id')
+  async getFeedItem(
+    @Param('id', ParseIntPipe) id: number,
     @Query('next', new DefaultValuePipe(false), ParseBoolPipe) next?: boolean,
   ) {
-    const parsedId = id ? parseInt(id, 10) : undefined;
-    return this.productionTypesService.find_feed_item(parsedId, next);
+    return this.productionTypesService.find_feed_item(id, next);
   }
 
   @Get('draft')

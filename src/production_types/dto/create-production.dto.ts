@@ -1,10 +1,6 @@
-import { IsString, IsOptional } from 'class-validator';
+import { IsString } from 'class-validator';
 
 export class CreateProductionDto {
   @IsString()
   craft_title: string;
-
-  @IsOptional()
-  @IsString()
-  description?: string;
 }

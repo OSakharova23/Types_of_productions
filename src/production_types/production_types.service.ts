@@ -24,8 +24,19 @@ export class ProductionTypesService {
   ) {}
 
   private async mapResponse(item: ProductionTypeEntity) {
-    const likesCount = await this.likeRepo.count({ where: { production_id: item.production_id } });
+    const likesCount = await this.likeRepo.count({
+      where: { production_id: item.production_id },
+    });
     const isCreator = item.creator_id === getCurrentUserId() ? 1 : 0;
+
+    // NEW: проверяем, лайкнул ли текущий пользователь эту услугу
+    const existingLike = await this.likeRepo.findOne({
+      where: {
+        production_id: item.production_id,
+        user_id: getCurrentUserId(),
+      },
+    });
+    const isLiked = existingLike ? 1 : 0;
 
     return {
       production_id: item.production_id,
@@ -37,6 +48,7 @@ export class ProductionTypesService {
       video_url: (await this.minioService.getSignedUrl(item.video_key)) ?? null,
       likes_count: likesCount,
       is_creator: isCreator,
+      is_liked: isLiked,
       created_at: item.created_at,
       formed_at: item.formed_at ?? null,
     };
@@ -58,16 +70,10 @@ export class ProductionTypesService {
     return Promise.all(items.map(item => this.mapResponse(item)));
   }
 
-  async find_feed_item(id?: number, next?: boolean) {
+  async find_feed_item(id: number, next?: boolean) {
     let item: ProductionTypeEntity | null = null;
 
-    if (!id) {
-      item = await this.productionRepo.findOne({
-        where: { status: 'published' },
-        order: { production_id: 'ASC' },
-        relations: { creator: true },
-      });
-    } else if (next) {
+    if (next) {
       item = await this.productionRepo.findOne({
         where: { status: 'published', production_id: MoreThan(id) },
         order: { production_id: 'ASC' },
@@ -122,7 +128,6 @@ export class ProductionTypesService {
     const draft = this.productionRepo.create({
       production_id: newId,
       craft_title: dto.craft_title,
-      description: dto.description ?? null,
       status: 'draft',
       creator_id: getCurrentUserId(),
       image_key: 'default-image.jpg',
@@ -161,7 +166,6 @@ export class ProductionTypesService {
     return this.mapResponse(draft);
   }
 
-  // Исправление 1: Проверка существования и принадлежности перед мягким удалением (возвращает 404)
   async softDeleteBySql(id: number): Promise<void> {
     const existing = await this.productionRepo.findOne({
       where: { production_id: id, creator_id: getCurrentUserId() },
@@ -176,7 +180,6 @@ export class ProductionTypesService {
     );
   }
 
-  // Исправление 2: Лайкать можно только опубликованные (published) услуги
   async handleLike(productionId: number, action: number): Promise<void> {
     const service = await this.productionRepo.findOne({
       where: { production_id: productionId, status: 'published' },
