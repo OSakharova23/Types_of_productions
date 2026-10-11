@@ -36,13 +36,12 @@
 | № | Метод | URL | Описание |
 |---|-------|-----|----------|
 | 1 | `GET` | `/api/production_types` | Получение списка опубликованных услуг с фильтрацией по норме выхода (`min_rate`, `max_rate`) и признаком `is_creator` (0/1). |
-| 2 | `GET` | `/api/production_types/feed` | Получение ленты опубликованных услуг (первая карточка). |
-| 3 | `GET` | `/api/production_types/feed?id=1&next=true` | Получение следующей карточки ленты по ID. |
-| 4 | `GET` | `/api/production_types/draft` | Получение полей черновика текущего пользователя (не более 1). |
-| 5 | `POST` | `/api/production_types` | Создание черновика + загрузка файлов изображения и видео в MinIO. |
-| 6 | `PUT` | `/api/production_types/:id/publish` | Публикация черновика (смена статуса на `published`, заполнение полей). |
-| 7 | `DELETE` | `/api/production_types/:id` | Мягкое удаление (soft delete, перевод в статус `deleted`) своей услуги. |
-| 8 | `POST` | `/api/production_types/:id/like` | Поставить/отменить лайк (`action`: 1 — поставить, 0 — отменить). |
-| 9 | `POST` | `/api/users/register` | Регистрация нового пользователя. |
-| 10 | `POST` | `/api/users/login` | Аутентификация (заглушка для лабы №4). |
-| 11 | `POST` | `/api/users/logout` | Деавторизация (заглушка для лабы №4). |
+| 2 | `GET` | `/api/production_types/feed/:id` | Получение карточки ленты. Параметр `next=true` опционален. |
+| 3 | `GET` | `/api/production_types/draft` | Получение полей черновика текущего пользователя (не более 1). |
+| 4 | `POST` | `/api/production_types` | Создание черновика + загрузка файлов изображения и видео в MinIO. |
+| 5 | `PUT` | `/api/production_types/:id/publish` | Публикация черновика (смена статуса на `published`, заполнение полей). |
+| 6 | `DELETE` | `/api/production_types/:id` | Мягкое удаление (soft delete, перевод в статус `deleted`) своей услуги. |
+| 7 | `POST` | `/api/production_types/:id/like` | Поставить/отменить лайк (`action`: 1 — поставить, 0 — отменить). |
+| 8 | `POST` | `/api/users/register` | Регистрация нового пользователя. |
+| 9 | `POST` | `/api/users/login` | Аутентификация (заглушка для лабы №4). |
+| 10 | `POST` | `/api/users/logout` | Деавторизация (заглушка для лабы №4). |
