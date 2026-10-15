@@ -24,13 +24,16 @@ import { UpdateProductionDto } from './dto/update-production.dto.js';
 import { LikeDto } from './dto/like.dto.js';
 import { SessionGuard } from '../auth/guards/session.guard.js';
 import type { Request } from 'express';
+import { ApiTags, ApiOperation, ApiCookieAuth } from '@nestjs/swagger';
 import 'multer';
 
+@ApiTags('Production Types')
 @Controller('production_types')
 export class ProductionTypesController {
   constructor(private readonly productionTypesService: ProductionTypesService) {}
 
   @Get()
+  @ApiOperation({ summary: 'Получение списка опубликованных типов производств с фильтрацией по норме выхода' })
   async getList(
     @Query() filters: ProductionFiltersDto,
     @Req() req: Request,
@@ -42,6 +45,7 @@ export class ProductionTypesController {
   }
 
   @Get('feed/:id')
+  @ApiOperation({ summary: 'Получение записи ленты' })
   async getFeedItem(
     @Param('id', ParseIntPipe) id: number,
     @Query('next', new DefaultValuePipe(false), ParseBoolPipe) next?: boolean,
@@ -55,16 +59,20 @@ export class ProductionTypesController {
 
   @Get('draft')
   @UseGuards(SessionGuard)
+  @ApiCookieAuth('sessionId')
+  @ApiOperation({ summary: 'Получение черновика текущего пользователя' })
   async getDraft(@Req() req: Request & { user: { id: number } }) {
     return this.productionTypesService.find_draft(req.user.id);
   }
 
   @Post()
   @UseGuards(SessionGuard)
+  @ApiCookieAuth('sessionId')
   @UseInterceptors(FileFieldsInterceptor([
     { name: 'image', maxCount: 1 },
     { name: 'video', maxCount: 1 },
   ]))
+  @ApiOperation({ summary: 'Создание черновика' })
   async createService(
     @Body() dto: CreateProductionDto,
     @UploadedFiles() files: { image?: Express.Multer.File[]; video?: Express.Multer.File[] },
@@ -77,6 +85,8 @@ export class ProductionTypesController {
 
   @Put(':id/publish')
   @UseGuards(SessionGuard)
+  @ApiCookieAuth('sessionId')
+  @ApiOperation({ summary: 'Публикация черновика и дозаполнение полей' })
   async publishService(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateProductionDto,
@@ -87,7 +97,9 @@ export class ProductionTypesController {
 
   @Delete(':id')
   @UseGuards(SessionGuard)
+  @ApiCookieAuth('sessionId')
   @HttpCode(204)
+  @ApiOperation({ summary: 'Мягкое удаление своей карточки типа производства' })
   async deleteService(
     @Param('id', ParseIntPipe) id: number,
     @Req() req: Request & { user: { id: number } },
@@ -97,7 +109,9 @@ export class ProductionTypesController {
 
   @Post(':id/like')
   @UseGuards(SessionGuard)
+  @ApiCookieAuth('sessionId')
   @HttpCode(204)
+  @ApiOperation({ summary: 'Поставить/отменить лайк (action: 1 — поставить, 0 — отменить)' })
   async handleLike(
     @Param('id', ParseIntPipe) id: number,
     @Body() likeDto: LikeDto,

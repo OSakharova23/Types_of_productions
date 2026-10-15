@@ -17,7 +17,7 @@ export class SessionService {
     });
   }
 
-  async create(sessionId: string, userId: number, ttlSec: number = 86400): Promise<void> {
+  async create(sessionId: string, userId: number, ttlSec: number = 604800): Promise<void> {
     await this.redis.setex(`session:${sessionId}`, ttlSec, String(userId));
   }
 

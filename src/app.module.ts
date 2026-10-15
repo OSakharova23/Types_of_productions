@@ -18,7 +18,7 @@ import { UsersModule } from './users/users.module.js';
         password: config.get('DB_PASSWORD'),
         database: config.get('DB_DATABASE'),
         autoLoadEntities: true,
-        synchronize: false,
+        synchronize: true,
       }),
     }),
     ProductionTypesModule,
