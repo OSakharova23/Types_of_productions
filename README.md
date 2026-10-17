@@ -36,7 +36,7 @@
 | № | Метод | URL | Описание |
 |---|-------|-----|----------|
 | 1 | `GET` | `/api/production_types` | Получение списка опубликованных услуг с фильтрацией по норме выхода (`min_rate`, `max_rate`) и признаком `is_creator` (0/1). |
-| 2 | `GET` | `/api/production_types/feed/:id` | Получение карточки ленты. Параметр `next=true` опционален. |
+| 2 | `GET` | `/api/production_types/feed` | Получение карточки ленты. Параметры `id`, `next=true`. |
 | 3 | `GET` | `/api/production_types/draft` | Получение полей черновика текущего пользователя (не более 1). |
 | 4 | `POST` | `/api/production_types` | Создание черновика + загрузка файлов изображения и видео в MinIO. |
 | 5 | `PUT` | `/api/production_types/:id/publish` | Публикация черновика (смена статуса на `published`, заполнение полей). |
